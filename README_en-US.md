@@ -5,7 +5,7 @@
 
 <p align="center">
   <a href="https://blog.stapxs.cn" target="blank">
-    <img src="public/img/icons/icon.svg" alt="Logo" width="156" height="156">
+    <img src="src/renderer/public/img/icons/icon.svg" alt="Logo" width="156" height="156">
   </a>
   <h2 align="center" style="font-weight: 600">Stapxs QQ Lite 2.0</h2>
 
@@ -42,7 +42,7 @@
 ### > Running Services
 Stapxs QQ Lite requires connecting to a QQ bot API to function properly. You can set one up by following [📖 this documentation](https://github.com/Stapxs/Stapxs-QQ-Lite-2.0/wiki/%E8%BF%9E%E6%8E%A5-oicq2-http).
 
-### > Using the App On the Go 
+### > Using the App On the Go
 GitHub Pages is enabled and is serving a live demo [🌎 over here](https://stapxs.github.io/Stapxs-QQ-Lite-2.0).
 
 ### > Installing the App

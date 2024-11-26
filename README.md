@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://blog.stapxs.cn" target="blank">
-    <img src="public/img/icons/icon.svg" alt="Logo" width="156" height="156">
+    <img src="src/renderer/public/img/icons/icon.svg" alt="Logo" width="156" height="156">
   </a>
   <h2 align="center" style="font-weight: 600">Stapxs QQ Lite 2.0</h2>
  <p align="center">
@@ -75,7 +75,7 @@ npx ssqq-web hostname=127.0.0.1 port=8081
 
 ### > 我遇到了问题
 
-- 如果有什么奇奇怪怪的问题, 欢迎发起 [issue](<https://github.com/Stapxs/Stapxs-QQ-Lite/issues>) 询问! 如果有什么 BUG 和优化建议也可以哦! 
+- 如果有什么奇奇怪怪的问题, 欢迎发起 [issue](<https://github.com/Stapxs/Stapxs-QQ-Lite/issues>) 询问! 如果有什么 BUG 和优化建议也可以哦!
 
 ## 📦️ 构建应用
 为了规范对其他仓库的引用，Stapxs QQ Lite 2.0 仓库含有一些子模块，这意味着你需要在克隆仓库的时候包含子模块：

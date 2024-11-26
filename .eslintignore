@@ -1,2 +1,7 @@
-src/assets/*
-public/sw.js
+node_modules
+dist
+out
+.gitignore
+
+src/renderer/public
+src/renderer/src/assets
