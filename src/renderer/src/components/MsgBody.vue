@@ -219,6 +219,7 @@
                       data.fileView.ext,
                     )
                   "
+                  playsinline
                   controls
                   muted
                   autoplay>
@@ -249,6 +250,7 @@
               v-else-if="item.type == 'video'"
               class="msg-video">
               <video
+                playsinline
                 controls
                 muted
                 autoplay>
@@ -485,9 +487,8 @@
             imgStyle(length: number, at: number, isFace: boolean) {
                 let style = 'msg-img'
                 // 处理样式
-                // if(isFace) { style += ' face' }
                 if (isFace) {
-                    style += ' '
+                    style += ' face'
                 }
                 if (length === 1) {
                     return (style += ' alone')

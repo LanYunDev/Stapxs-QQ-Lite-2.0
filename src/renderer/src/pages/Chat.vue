@@ -17,12 +17,9 @@
         (runtimeData.tags.openSideBar ? ' open' : '') +
         (runtimeData.sysConfig.opt_no_window ? ' withBar' : '')
     "
-    :style="
-      `background-image: url(${runtimeData.sysConfig.chat_background});` +
-        (Option.get('fs_adaptation') > 0
-          ? '--append-fs-adaptation:' + Option.get('fs_adaptation') + 'px'
-          : '--append-fs-adaptation:0px')
-    ">
+    :style="`background-image: url(${runtimeData.sysConfig.chat_background});`"
+    @touchmove="ChatOnMove"
+    @touchend="chatMoveEnd">
     <!-- 聊天基本信息 -->
     <div class="info">
       <font-awesome-icon
@@ -957,6 +954,12 @@
                         msgOnTouchDown: false,
                         onMove: 'no',
                     },
+                    chatTouch: {
+                        startX: -1,
+                        startY: -1,
+                        openSuccess: false,
+                        onScroll: false
+                    }
                 },
                 details: [
                     { open: false },
@@ -1003,7 +1006,7 @@
                 this.initMenuDisplay()
             },
         },
-        mounted() {
+        async mounted() {
             // 消息列表刷新
             this.updateList(this.list.length, 0)
             // PS：由于监听 list 本身返回的新旧值是一样，于是监听 length（反正也只要知道长度）
@@ -2287,6 +2290,8 @@
                             'setMessageRead',
                         )
                     }
+                    // 将焦点移动到发送框
+                    this.toMainInput()
                 }
 
                 // =================== 刷新统计数据 ===================
@@ -2513,31 +2518,18 @@
                     const dy = Math.abs(startY - event.targetTouches[0].pageY)
                     const x = startX - event.targetTouches[0].pageX
                     // 如果 dy 大于 10px 则判定为用户在滚动页面，打断长按消息判定
+                    if (dy > 10) {
+                        this.tags.chatTouch.onScroll = true
+                    }
                     if (dy > 10 || dx > 5) {
                         if (this.tags.msgTouch.msgOnTouchDown) {
-                            logger.add(
-                                LogType.UI,
-                                '用户正在滑动，打断长按判定。',
-                            )
+                            logger.add(LogType.UI, '用户正在滑动，打断长按判定。')
                             this.tags.msgTouch.msgOnTouchDown = false
                         }
                     }
                     if (dy < sender.offsetHeight / 3 && dy < 40) {
                         this.tags.msgTouch.onMove = 'on'
-                        if (x < -10) {
-                            // 左滑
-                            if (dx >= sender.offsetWidth / 3) {
-                                this.tags.msgTouch.onMove = 'right'
-                                logger.add(
-                                    LogType.UI,
-                                    '触发右滑判定 ……（转发）',
-                                )
-                            } else {
-                                sender.style.transform =
-                                    'translate(' + (Math.sqrt(dx) + 5) + 'px)'
-                                sender.style.transition = 'transform 0s'
-                            }
-                        } else if (x > 10) {
+                        if (x > 10) {
                             // 右滑
                             if (dx >= sender.offsetWidth / 3) {
                                 this.tags.msgTouch.onMove = 'left'
@@ -2697,6 +2689,117 @@
             openLeftBar() {
                 runtimeData.tags.openSideBar = !runtimeData.tags.openSideBar
             },
+
+            // 聊天面板右滑操作
+            ChatOnMove(event: TouchEvent) {
+                const chatPan = document.getElementById('chat-pan')
+                if(chatPan) {
+                    // 暂时去除 transition 过渡防止不跟手
+                    chatPan.style.transition = 'all 0s'
+                    // 获取 x 轴的位置
+                    const x = event.targetTouches[0].pageX
+                    const y = event.targetTouches[0].pageY
+                    // 记录开始位置
+                    if(this.tags.chatTouch.startX == -1) {
+                        this.tags.chatTouch.startX = x
+                    }
+                    if(this.tags.chatTouch.startY == -1) {
+                        this.tags.chatTouch.startY  = y
+                    }
+                    const moveX = Math.abs(x - this.tags.chatTouch.startX)
+                    const moveY = Math.abs(y - this.tags.chatTouch.startY)
+                    const width = document.body.clientWidth
+                    const heightAllow = document.body.clientHeight * 0.05
+
+                    const allowMove = moveX > moveY
+                        && moveY < heightAllow
+                        && x - this.tags.chatTouch.startX > 0
+                    if(allowMove) {
+                        if(this.tags.openChatInfo) {
+                            // 聊天信息面板返回
+                            const infoPan = chatPan.getElementsByClassName('chat-info-pan')[0] as HTMLDivElement
+                            if(infoPan) {
+                                infoPan.style.transition = 'all 0s'
+                                infoPan.style.transform =
+                                    'translateX(' + (x - this.tags.chatTouch.startX) + 'px)'
+                                this.tags.chatTouch.openSuccess =
+                                    moveX > width / 3
+                            }
+                        } else if(this.mergeList != undefined) {
+                            // 合并转发面板返回
+                            const mergePan = chatPan.getElementsByClassName('merge-pan')[0] as HTMLDivElement
+                            if(mergePan) {
+                                mergePan.style.transition = 'all 0s'
+                                mergePan.style.transform =
+                                    'translateX(' + (x - this.tags.chatTouch.startX) + 'px)'
+                                this.tags.chatTouch.openSuccess =
+                                    moveX > width / 3
+                            }
+                        } else {
+                            // 聊天面板底层返回
+                            chatPan.style.transform = 'translateX(' + (x - this.tags.chatTouch.startX) + 'px)'
+                            this.tags.chatTouch.openSuccess = moveX > width / 3
+                            // 禁用滚动
+                            const chat = chatPan.getElementsByClassName('chat')[0] as HTMLDivElement
+                            if(chat) {
+                                chat.style.overflowY = 'hidden'
+                            }
+                        }
+                    }
+                }
+            },
+
+            // 聊天面板右滑结束
+            chatMoveEnd() {
+                this.tags.chatTouch.startX = -1
+                this.tags.chatTouch.startY = -1
+                const chatPan = document.getElementById('chat-pan')
+                if(chatPan) {
+                    if(!this.tags.chatTouch.openSuccess) {
+                        if(this.tags.openChatInfo) {
+                            const infoPan = chatPan.getElementsByClassName('chat-info-pan')[0] as HTMLDivElement
+                            if(infoPan) {
+                                infoPan.style.transition = 'transform 0.3s'
+                                infoPan.style.transform = ''
+                            }
+                        } else if(this.mergeList != undefined) {
+                            const mergePan = chatPan.getElementsByClassName('merge-pan')[0] as HTMLDivElement
+                            if(mergePan) {
+                                mergePan.style.transform = ''
+                            }
+                        } else {
+                            runtimeData.tags.openSideBar = false
+                        }
+                    } else {
+                        if(this.tags.openChatInfo) {
+                            this.openChatInfoPan()
+                        } else if(this.mergeList != undefined) {
+                            this.closeMergeMsg()
+                            setTimeout(() => {
+                                const mergePan = chatPan.getElementsByClassName('merge-pan')[0] as HTMLDivElement
+                                if(mergePan) {
+                                    mergePan.style.transform = ''
+                                }
+                            }, 500)
+                         } else {
+                            runtimeData.tags.openSideBar = true
+                            new Logger().add(LogType.UI, '右滑打开侧边栏触发完成')
+                        }
+                    }
+                    // 恢复过渡效果，完成撒手之后的剩余动画
+                    chatPan.style.transition = ''
+                    setTimeout(() => {
+                        chatPan.style.transform = ''
+                    }, 100)
+                    // 恢复滚动
+                    const chat = chatPan.getElementsByClassName('chat')[0] as HTMLDivElement
+                    if(chat) {
+                        chat.style.overflowY = 'scroll'
+                    }
+                }
+                this.tags.chatTouch.openSuccess = false
+                this.tags.chatTouch.onScroll = false
+            }
         },
     })
 </script>

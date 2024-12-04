@@ -237,11 +237,11 @@
             v-model="runtimeData.sysConfig.initial_scale"
             :style="`background-size: ${initialScaleShow / 0.05}% 100%;`"
             type="range"
-            min="0.1"
-            max="5"
+            min="0.5"
+            max="1.5"
             step="0.05"
             name="initial_scale"
-            @change="save"
+            @change="scaleSave"
             @input="setInitialScaleShow">
           <span
             :style="`color: var(--color-font${
@@ -389,6 +389,59 @@
                 })
             },
 
+            scaleSave(event: Event) {
+                save(event)
+                // 5 秒后自动取消防止误操作导致无法恢复
+                const timerId = setTimeout(() => {
+                    event.target.value = 0.85
+                    runtimeData.sysConfig.initial_scale = 0.85
+                    this.initialScaleShow = 0.85
+                    save(event)
+                    runtimeData.popBoxList.pop()
+                    const popInfo = {
+                        svg: 'up-down-left-right',
+                        html:
+                            '<span>' +
+                            this.$t(
+                                '缩放比例调整已取消，已恢复默认缩放比例。',
+                            ) +
+                            '</span>',
+                        title: this.$t('确认缩放比例'),
+                        button: [
+                            {
+                                text: this.$t('取消'),
+                                master: true,
+                                fun: () => {
+                                    runtimeData.popBoxList.pop()
+                                },
+                            }
+                        ],
+                    }
+                    runtimeData.popBoxList.push(popInfo)
+                }, 5000)
+                // 保存提醒
+                const popInfo = {
+                    svg: 'up-down-left-right',
+                    html:
+                        '<span>' +
+                        this.$t(
+                            '点击确认以应用缩放比例，预览将在 5 秒后取消……',
+                        ) +
+                        '</span>',
+                    title: this.$t('确认缩放比例'),
+                    button: [
+                        {
+                            text: this.$t('确定'),
+                            fun: () => {
+                                runtimeData.popBoxList.pop()
+                                clearTimeout(timerId)
+                            },
+                        }
+                    ],
+                }
+                runtimeData.popBoxList.push(popInfo)
+            },
+
             setInitialScaleShow(event: Event) {
                 const sender = event.target as HTMLInputElement
                 this.initialScaleShow = Number(sender.value)
@@ -399,8 +452,8 @@
             },
 
             restartapp() {
-                if (runtimeData.reader) {
-                    runtimeData.reader.send('win:relaunch')
+                if (runtimeData.plantform.reader) {
+                    runtimeData.plantform.reader.send('win:relaunch')
                 }
             },
 

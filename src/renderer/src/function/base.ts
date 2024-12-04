@@ -78,21 +78,25 @@ export class Logger {
      */
     private print(type: LogType, args: string, data: any, hidden: boolean) {
         const error = new Error()
+        // 浏览器类型，用于判断是不是 webkit
+        const isWebkit = /webkit/i.test(navigator.userAgent)
         // 从调用栈中获取调用者信息
         let from = undefined as string | undefined
         const stack = error.stack
         if (stack) {
             const stackArr = stack.split('\n')
-            // 找到第一个不是 at Logger 开头的调用者信息
+            // 找到第一个不是 at Logger 开头的调用者信息（WebKit 为第一个 @ 开头）
             for (let i = 1; i < stackArr.length; i++) {
-                if (!stackArr[i].includes('at Logger')) {
+                if (isWebkit ? stackArr[i].startsWith('@') : !stackArr[i].includes('at Logger')) {
                     // 取出链接部分，去除括号
-                    from =
-                        stackArr[i].replace(/\(|\)/g, '').split(' ').pop() || ''
+                    from = stackArr[i].replace(/\(|\)/g, '').split(' ').pop() || ''
                     from = from.replace(
                         'webpack-internal:///./',
                         'webpack-internal:///',
                     )
+                    if(from.startsWith('@')) {
+                        from = from.substring(1)
+                    }
                     if (from.startsWith('webpack-internal:///node_modules')) {
                         from = undefined
                     }
@@ -119,7 +123,7 @@ export class Logger {
                 `background:#${this.logTypeInfo[type][0]};color:#${this.logTypeInfo[type][1]};border-radius:7px 0 0 7px;padding:2px 4px 2px 7px;margin-bottom:7px;`,
                 'background:#e3e8ec;color:#000;padding:2px 7px 4px 4px;border-radius:0 7px 7px 0;margin-bottom:7px;',
                 '',
-                data,
+                data
             )
         } else {
             // eslint-disable-next-line no-console
@@ -127,7 +131,7 @@ export class Logger {
                 `%c${typeStr}%c ${args}`,
                 `background:#${this.logTypeInfo[type][0]};color:#${this.logTypeInfo[type][1]};border-radius:7px;padding:2px 4px 2px 7px;margin-bottom:7px;`,
                 '',
-                data,
+                data
             )
         }
     }

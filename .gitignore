@@ -9,4 +9,5 @@ out
 dev-dist
 dist
 dist_electron
+dist_capacitor
 stats.html

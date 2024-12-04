@@ -1,6 +1,8 @@
 import { contextBridge, shell } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
+// import { Capacitor } from '@capacitor/core'
+
 // Custom APIs for renderer
 const api = {}
 

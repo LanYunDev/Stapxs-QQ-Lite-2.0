@@ -83,7 +83,7 @@
                 height: number
             } | null
             if (runtimeData.tags.isElectron) {
-                const reader = runtimeData.reader
+                const reader = runtimeData.plantform.reader
                 if (reader) {
                     windowInfo = await reader.invoke('win:getWindowInfo')
                 }
@@ -182,7 +182,7 @@
                             num = Math.round(num)
                             // 输出 translateX
                             if (runtimeData.tags.isElectron && windowInfo) {
-                                const reader = runtimeData.reader
+                                const reader = runtimeData.plantform.reader
                                 if (reader) {
                                     reader.send('win:move', {
                                         x: windowInfo.x + num,

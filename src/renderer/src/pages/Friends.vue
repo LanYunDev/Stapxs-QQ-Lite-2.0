@@ -24,9 +24,10 @@
             :icon="['fas', 'rotate-right']"
             @click="reloadUser" />
         </div>
-        <div class="small">
+        <div id="friend-small-search" class="small">
           <label>
             <input
+              id="friend-search-small"
               v-model="searchInfo"
               type="text"
               :placeholder="$t('搜索 ……')"
@@ -45,6 +46,7 @@
         </div>
         <label>
           <input
+            id="friend-search"
             v-model="searchInfo"
             type="text"
             :placeholder="$t('搜索 ……')"
@@ -219,6 +221,22 @@
                 loginInfo: loginInfo,
             }
         },
+        mounted() {
+            // 判断 friend-small-search 是否 display none
+            const smallSearch = document.getElementById('friend-small-search')
+            if(smallSearch) {
+                const style = window.getComputedStyle(smallSearch)
+                let name = 'friend-search'
+                if(style.display != 'none') {
+                    name = 'friend-search-small'
+                }
+                // 将焦点移动到搜索框
+                const search = document.getElementById(name)
+                if(search) {
+                    search.focus()
+                }
+            }
+        },
         methods: {
             /**
              * 联系人被点击事件
@@ -297,6 +315,17 @@
                     this.isSearch = false
                     this.runtimeData.showList = [] as any[]
                 }
+                // macOS: 刷新 TouchBar
+                if(runtimeData.tags.isElectron && runtimeData.reader) {
+                    // list 只需要 id 和 name
+                    runtimeData.reader.send('sys:flushFriendSearch',
+                        this.runtimeData.showList.map((item) => {
+                            return {
+                                id: item.user_id ? item.user_id : item.group_id,
+                                name: this.getShowName(item)
+                            }
+                        }))
+            }
             },
 
             /**
@@ -396,6 +425,11 @@
         }
         .exp-header:not(.open) > span {
             display: none;
+        }
+    }
+    @media (max-width: 500px) {
+        .exp-header > span {
+            display: block !important;
         }
     }
 </style>

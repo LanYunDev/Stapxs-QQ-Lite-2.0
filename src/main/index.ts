@@ -106,7 +106,7 @@ async function createWindow() {
         // 打开开发者工具
         win.webContents.openDevTools()
     } else {
-        win.loadURL('app://./renderer/index.html')
+        win.loadURL('app://./index.html')
     }
 
     session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
@@ -186,8 +186,9 @@ app.on('ready', async () => {
     // 注册 customFileProtocol 到 app 协议
     protocol.handle('app', async (request) => {
         const url = request.url.replace('app://', ''); // 移除协议部分
-        // 实际路径在 __dirname 的上一层
-        const filePath = path.join(__dirname, '..', url);
+        // 实际路径在 __dirname 的上一层的 renderer 目录下
+        // PS：为了防止报错堆栈输出过多的路径信息，在这里添加了 renderer 目录
+        const filePath = path.join(__dirname, '..', 'renderer', url);
 
         // 确认文件存在并返回内容
         try {

@@ -43,6 +43,8 @@ export interface NotificationElem {
 }
 
 export interface NotifyInfo {
+    base_type: string,
+
     title: string
     body: string
     tag: string

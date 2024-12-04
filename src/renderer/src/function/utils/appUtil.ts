@@ -248,11 +248,11 @@ export function downloadFile(
             logger.error(e as Error, '下载文件失败')
         }
     } else {
-        if (runtimeData.reader) {
-            runtimeData.reader.on('sys:downloadBack', (_, params) => {
+        if (runtimeData.plantform.reader) {
+            runtimeData.plantform.reader.on('sys:downloadBack', (_, params) => {
                 onprocess(params)
             })
-            runtimeData.reader.send('sys:download', {
+            runtimeData.plantform.reader.send('sys:download', {
                 downloadPath: url,
                 fileName: name,
             })
@@ -261,9 +261,9 @@ export function downloadFile(
 }
 
 export async function loadWinColor() {
-    if (runtimeData.reader) {
+    if (runtimeData.plantform.reader) {
         // 获取系统主题色
-        updateWinColor(await runtimeData.reader.invoke('sys:getWinColor'))
+        updateWinColor(await runtimeData.plantform.reader.invoke('sys:getWinColor'))
     }
 }
 
@@ -308,7 +308,7 @@ export function updateWinColor(color: string) {
 export function createMenu() {
     const { $t } = app.config.globalProperties
     // MacOS：初始化菜单
-    if (runtimeData.reader) {
+    if (runtimeData.plantform.reader) {
         // 初始化菜单
         const menuTitles = {} as { [key: string]: string }
         menuTitles.success = $t(
@@ -347,36 +347,36 @@ export function createMenu() {
         menuTitles.feedback = $t('在 Github 上反馈问题')
         menuTitles.license = $t('许可协议')
 
-        runtimeData.reader.send('sys:createMenu', menuTitles)
+        runtimeData.plantform.reader.send('sys:createMenu', menuTitles)
     }
 }
 
 export function updateMenu(config: { id: string; action: string; value: any }) {
     // MacOS：更新菜单
-    if (runtimeData.reader) {
-        runtimeData.reader.send('sys:updateMenu', config)
+    if (runtimeData.plantform.reader) {
+        runtimeData.plantform.reader.send('sys:updateMenu', config)
     }
 }
 
 export function createIpc() {
-    if (runtimeData.reader) {
-        runtimeData.reader.on('bot:flushUser', () => {
+    if (runtimeData.plantform.reader) {
+        runtimeData.plantform.reader.on('bot:flushUser', () => {
             reloadUsers()
             popInfo.add(
                 PopType.INFO,
                 app.config.globalProperties.$t('刷新用户列表成功'),
             )
         })
-        runtimeData.reader.on('bot:logout', () => {
+        runtimeData.plantform.reader.on('bot:logout', () => {
             option.remove('auto_connect')
             Connector.close()
         })
-        runtimeData.reader.on('bot:quickReply', (_, data) => {
+        runtimeData.plantform.reader.on('bot:quickReply', (_, data) => {
             sendMsgRaw(
                 data.id,
                 data.type,
                 parseMsg(
-                    '[SQ:0]' + data.content,
+                    data.content,
                     [{ type: 'reply', id: String(data.msg) }],
                     [],
                 ),
@@ -394,10 +394,10 @@ export function createIpc() {
             }
         })
 
-        runtimeData.reader.on('sys:handleUri', (_, data) => {
+        runtimeData.plantform.reader.on('sys:handleUri', (_, data) => {
             logger.info(JSON.stringify(data))
         })
-        runtimeData.reader.on('app:about', () => {
+        runtimeData.plantform.reader.on('app:about', () => {
             const popInfo = {
                 title:
                     app.config.globalProperties.$t('关于') +
@@ -408,41 +408,37 @@ export function createIpc() {
             }
             runtimeData.popBoxList.push(popInfo)
         })
-        runtimeData.reader.on('app:changeTab', (_, name) => {
+        runtimeData.plantform.reader.on('app:changeTab', (_, name) => {
+            window.focus()
             document.getElementById('bar-' + name.toLowerCase())?.click()
         })
-        runtimeData.reader.on('app:openLink', (_, link) => {
+        runtimeData.plantform.reader.on('app:openLink', (_, link) => {
             openLink(link)
         })
-        runtimeData.reader.on('app:error', (_, text) => {
+        runtimeData.plantform.reader.on('app:error', (_, text) => {
             new Logger().add(LogType.ERR, text)
         })
-        runtimeData.reader.on('app:jumpChat', (_, info) => {
+        runtimeData.plantform.reader.on('app:jumpChat', (_, info) => {
             jumpToChat(info.userId, info.msgId)
             new Notify().closeAll(info.userId)
         })
 
         // 后端连接模式
-        runtimeData.reader.on('onebot:onopen', (_, data) => {
+        runtimeData.plantform.reader.on('onebot:onopen', (_, data) => {
             Connector.onopen(data.address, data.token)
         })
-        runtimeData.reader.on('onebot:onmessage', (_, message) => {
+        runtimeData.plantform.reader.on('onebot:onmessage', (_, message) => {
             Connector.onmessage(message)
         })
-        runtimeData.reader.on('onebot:onclose', (_, data) => {
+        runtimeData.plantform.reader.on('onebot:onclose', (_, data) => {
             Connector.onclose(data.code, data.reason, data.address, data.token)
         })
     }
 }
 
-export function loadAppendStyle() {
+export async function loadAppendStyle() {
     const platform = runtimeData.tags.platform
     logger.info('正在装载补充样式……')
-    if (runtimeData.tags.isElectron) {
-        import('@renderer/assets/css/append/append_new.css').then(() => {
-            logger.info('UI 2.0 附加样式加载完成')
-        })
-    }
     if(platform != undefined) {
         import(`@renderer/assets/css/append/append_${platform}.css`)
             .then(() => {
@@ -451,7 +447,27 @@ export function loadAppendStyle() {
             .catch(() => {
                 logger.info('未找到对应平台的附加样式')
             })
+        if(platform == 'ios') {
+            const safeArea = await runtimeData.plantform.
+                pulgins.SafeArea?.getSafeArea()
+            if (safeArea) {
+                const app = document.getElementById('app')
+                if (app) {
+                    app.style.paddingTop = safeArea.top + 'px'
+                    app.style.height = 'calc(100% - ' + safeArea.top + 'px)'
+                }
+            }
+            runtimeData.sysConfig.fs_adaptation = safeArea.bottom - 10
+        }
     }
+
+    // UI 2.0 附加样式
+    if (runtimeData.tags.isElectron) {
+        import('@renderer/assets/css/append/append_new.css').then(() => {
+            logger.info('UI 2.0 附加样式加载完成')
+        })
+    }
+    // 透明 UI 附加样式
     let subVersion = runtimeData.tags.release?.split('.') as any
     subVersion = subVersion ? Number(subVersion[2]) : 0
     if (
@@ -463,7 +479,7 @@ export function loadAppendStyle() {
         })
     }
     if (runtimeData.tags.isElectron && platform == 'linux') {
-        const gnomeExtInfo = runtimeData.reader?.invoke('sys:getGnomeExt')
+        const gnomeExtInfo = runtimeData.plantform.reader?.invoke('sys:getGnomeExt')
         if (gnomeExtInfo) {
             gnomeExtInfo.then((info: any) => {
                 if (
@@ -742,8 +758,8 @@ export function BackendRequest(
     cookies: string[],
     data: any = undefined,
 ) {
-    if (runtimeData.reader) {
-        runtimeData.reader.send('sys:requestHttp', {
+    if (runtimeData.plantform.reader) {
+        runtimeData.plantform.reader.send('sys:requestHttp', {
             type: type,
             url: url,
             cookies: JSON.stringify(cookies),

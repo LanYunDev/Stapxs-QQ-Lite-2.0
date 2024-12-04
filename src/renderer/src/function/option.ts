@@ -60,8 +60,8 @@ const configFunction: { [key: string]: (value: any) => void } = {
 }
 
 function viewAlwaysTop(value: boolean) {
-    if (runtimeData.reader) {
-        runtimeData.reader.send('win:alwaysTop', value)
+    if (runtimeData.plantform.reader) {
+        runtimeData.plantform.reader.send('win:alwaysTop', value)
     }
 }
 
@@ -81,8 +81,8 @@ function viewRevolve(value: boolean) {
 
 function updateWinColorOpt(value: boolean) {
     if (value == true) {
-        if (runtimeData.reader) {
-            runtimeData.reader.on('sys:WinColorChanged', (_, params) => {
+        if (runtimeData.plantform.reader) {
+            runtimeData.plantform.reader.on('sys:WinColorChanged', (_, params) => {
                 updateWinColor(params)
             })
         }
@@ -98,13 +98,16 @@ function setMsgType(value: any) {
 
 /**
  * 修改移动端缩放比例
- * @param value 数值（0.1 - 5）
+ * @param value 数值（0.5 - 1.5）
  */
 function changeInitialScale(value: number) {
     const viewport = document.getElementById('viewport')
-    if (viewport && value && value >= 0.1 && value <= 5) {
+    if (viewport && value && value >= 0.5 && value <= 1.5) {
         (viewport as any).content =
             `width=device-width, initial-scale=${value}, maximum-scale=5, user-scalable=0`
+    } else {
+        (viewport as any).content =
+            'width=device-width, initial-scale=0.85, maximum-scale=5, user-scalable=0'
     }
 }
 
@@ -304,8 +307,8 @@ function changeChatView(name: string | undefined) {
 export function load(): { [key: string]: any } {
     let data = {} as { [key: string]: any }
 
-    if (runtimeData.reader) {
-        data = runtimeData.reader.sendSync('opt:getAll')
+    if (runtimeData.plantform.reader) {
+        data = runtimeData.plantform.reader.sendSync('opt:getAll')
     } else {
         const str = localStorage.getItem('options')
         if (str != null) {
@@ -392,8 +395,8 @@ export function get(name: string): any {
  * @returns 设置项值（如果没有则为 null）
  */
 export function getRaw(name: string) {
-    if (runtimeData.reader) {
-        return runtimeData.reader.sendSync('opt:get', name)
+    if (runtimeData.plantform.reader) {
+        return runtimeData.plantform.reader.sendSync('opt:get', name)
     } else {
         // 解析拆分 cookie 并执行各个设置项的初始化方法
         const str = localStorage.getItem('options')
@@ -441,7 +444,7 @@ export function saveAll(config = {} as { [key: string]: any }) {
     localStorage.setItem('options', str)
 
     // electron：将配置保存
-    if (runtimeData.reader) {
+    if (runtimeData.plantform.reader) {
         const saveConfig = config
         Object.keys(config).forEach((key) => {
             const isObject = typeof config[key] == 'object'
@@ -449,7 +452,7 @@ export function saveAll(config = {} as { [key: string]: any }) {
                 ? JSON.stringify(config[key])
                 : config[key]
         })
-        runtimeData.reader.send('opt:saveAll', saveConfig)
+        runtimeData.plantform.reader.send('opt:saveAll', saveConfig)
     }
 }
 
@@ -521,8 +524,8 @@ export function runASWEvent(event: Event) {
                     text: app.config.globalProperties.$t('确定'),
                     fun: () => {
                         if (runtimeData.tags.isElectron) {
-                            if (runtimeData.reader) {
-                                runtimeData.reader.send('win:relaunch')
+                            if (runtimeData.plantform.reader) {
+                                runtimeData.plantform.reader.send('win:relaunch')
                             }
                         } else {
                             location.reload()

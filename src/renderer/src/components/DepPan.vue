@@ -36,6 +36,7 @@
           <path
             d="M251,243.36h0a24.35,24.35,0,0,0,5.16,48.16,24.68,24.68,0,0,0,5.16-.55A24.36,24.36,0,1,0,251,243.36Z" />
         </svg>
+        <svg height="2500" preserveAspectRatio="xMidYMid" width="2500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256.005"><path d="M39.863 54.115L.31 93.716l60.995 61.179L0 216.385l39.428 39.62 61.43-61.508 61.097 61.068 39.552-39.602z" /><path d="M140.517 154.896l-39.658 39.601 61.097 61.069 39.552-39.602z" /><path d="M140.517 154.896l-39.658 39.601 15.267 15.182z" fill-opacity=".2" /><path d="M194.57 100.985L256 39.478 216.43 0 155.02 61.384 93.917.31 54.365 39.913 216.01 201.761l39.552-39.602z" /><path d="M115.36 100.987l39.659-39.602L93.917.313 54.365 39.914z" /><path d="M115.359 100.985l39.659-39.601-15.27-15.186z" fill-opacity=".2" /></svg>
       </div>
     </div>
     <div class="dept-list">
@@ -119,7 +120,7 @@
         name: 'DepPan',
         data() {
             return {
-                openLink: openLink,
+                openLink: openLink
             }
         },
     })
@@ -171,6 +172,7 @@
         background: var(--color-main);
         border-radius: 100%;
         padding: 5px;
+        margin-right: 10px;
     }
 
     .dept-list {
@@ -191,7 +193,9 @@
         display: flex;
         height: 45vh;
         overflow-y: scroll;
+        overflow-x: hidden;
         padding-right: 15px;
+
     }
     .info {
         min-height: unset;
@@ -241,13 +245,15 @@
             margin-bottom: 20px;
         }
         .main > div:first-child {
-            display: none;
+            height: 25vh;
+            margin-bottom: 10px;
         }
         .power-by > img {
             width: 60%;
         }
         .dept {
-            height: 40vh;
+            max-height: 30vh;
+            height: fit-content;
         }
     }
 </style>

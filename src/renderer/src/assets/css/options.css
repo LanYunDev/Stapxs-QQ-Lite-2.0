@@ -12,11 +12,15 @@
 }
 
 .opt-main {
+    overflow: hidden;
     background: var(--color-bg);
-    height: 100%;
+    height: 0;
     flex-direction: row;
     display: flex;
     padding: 5px;
+}
+.opt-main.active {
+    height: 100% !important;
 }
 
 .opt-main > div:first-child {
@@ -623,9 +627,6 @@
 @media (max-width: 700px) {
     .option-title {
         display: none !important;
-    }
-    .opt-main {
-        height: 100%;
     }
     .opt-main > div:first-child {
         display: none;

@@ -1,4 +1,3 @@
-# 在主分支上构建
 name: lint
 on:
     pull_request: # PR 触发

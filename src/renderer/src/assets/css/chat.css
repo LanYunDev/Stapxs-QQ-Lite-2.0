@@ -6,8 +6,6 @@ input {
 }
 
 .chat-pan {
-    --append-fs-adaptation: 0px;
-
     background-color: var(--color-card);
     background-repeat: no-repeat;
     background-position: center;
@@ -18,6 +16,7 @@ input {
     pointer-events: none;
     transition: all 0.3s;
     position: absolute;
+    overflow: hidden;
     display: flex;
     height: 100%;
     left: 371px;
@@ -113,6 +112,9 @@ input {
     padding-top: 90px;
     z-index: 1;
     flex: 1;
+}
+.chat-pan > div.chat > div {
+    height: calc(100% - var(--safe-area-bottom));
 }
 .chat-pan > div.chat::-webkit-scrollbar {
     background: transparent;
@@ -392,7 +394,8 @@ input {
 .msg-menu {
     position: absolute;
     overflow: hidden;
-    height: 100%;
+    height: calc(100% - var(--safe-area-bottom)) !important;
+    top: 0;
     width: 100%;
     z-index: 10;
 }
@@ -484,7 +487,7 @@ input {
 
 .mumber-info {
     position: absolute;
-    height: 100%;
+    height: calc(100% - var(--safe-area-bottom));
     width: 100%;
 }
 .mumber-info span,
@@ -1574,7 +1577,7 @@ msg-select-tag > svg {
 @media (max-width: 700px) {
     /* 消息面板 */
     .chat-pan {
-        height: calc(100% - 75px - var(--append-fs-adaptation));
+        height: calc(100% - 75px - var(--safe-area-bottom));
         left: 80px !important;
     }
     .chat-pan.withBar {

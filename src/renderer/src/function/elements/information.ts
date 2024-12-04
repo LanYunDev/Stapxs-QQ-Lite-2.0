@@ -7,7 +7,6 @@ export enum BotMsgType {
 }
 
 export interface RunTimeDataElem {
-    reader?: IpcRenderer | null
     sysConfig: { [key: string]: any }
     jsonMap?: any
     botInfo: { [key: string]: any }
@@ -21,6 +20,11 @@ export interface RunTimeDataElem {
         chatView: any
         msgView: any
     }
+    plantform: {
+        reader?: IpcRenderer | null,
+        capacitor?: any,
+        pulgins?: any
+    },
     tags: {
         firstLoad: boolean
         msgType: BotMsgType
@@ -31,6 +35,7 @@ export interface RunTimeDataElem {
             index: number
         }
         loginWaveTimer?: any
+        isCapacitor: boolean
         isElectron: boolean
         platform: string | undefined
         release: string | undefined

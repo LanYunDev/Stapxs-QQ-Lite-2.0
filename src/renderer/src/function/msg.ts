@@ -11,7 +11,7 @@
  *      3.0 - 优化更优雅的代码结构
  * @Description: 此模块用于拆分和保存/处理 bot 返回的各类信息，整个运行时数据也保存在这儿。
  */
-import qed from '@renderer/assets/qed.txt'
+import qed from '@renderer/assets/qed.txt?raw'
 
 import app from '@renderer/main'
 import Option from './option'
@@ -1649,6 +1649,8 @@ function newMsg(_: string, data: any) {
                     })
                 }
                 const msgInfo = {
+                    base_type: 'msg',
+
                     title: data.group_name ?? data.sender.nickname,
                     body:
                         data.message_type === 'group'
@@ -1672,15 +1674,6 @@ function newMsg(_: string, data: any) {
                 // 发送消息
                 if (Option.get('close_notice') !== true) {
                     new Notify().notify(msgInfo)
-                }
-                // MacOS：刷新 touchbar
-                if (runtimeData.tags.isElectron && runtimeData.reader) {
-                    runtimeData.reader.send('sys:newMessage', {
-                        id: id,
-                        image: msgInfo.icon,
-                        name: msgInfo.title,
-                        msg: raw,
-                    })
                 }
             }
             // 如果发送者不在消息列表里，将它添加到消息列表里
@@ -1747,6 +1740,7 @@ function updateSysInfo(
 // ==============================================================
 
 const baseRuntime = {
+    plantform: {} as any,
     tags: {
         firstLoad: false,
         canLoadHistory: true,
@@ -1754,6 +1748,7 @@ const baseRuntime = {
         viewer: { index: 0 },
         msgType: BotMsgType.Array,
         isElectron: false,
+        isCapacitor: false,
         platform: undefined,
         release: undefined,
         connectSsl: false,

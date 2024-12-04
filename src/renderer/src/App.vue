@@ -45,24 +45,28 @@
           "
           @click="changeTab('主页', 'Home', false)">
           <font-awesome-icon :icon="['fas', 'home']" />
+          <span>{{ $t('主页') }}</span>
         </li>
         <li
           id="bar-msg"
           :class="tags.page == 'Messages' ? 'active' : ''"
           @click="changeTab('信息', 'Messages', true)">
           <font-awesome-icon :icon="['fas', 'envelope']" />
+          <span>{{ $t('信息') }}</span>
         </li>
         <li
           id="bar-friends"
           :class="tags.page == 'Friends' ? 'active' : ''"
           @click="changeTab('列表', 'Friends', true)">
           <font-awesome-icon :icon="['fas', 'user']" />
+          <span>{{ $t('列表') }}</span>
         </li>
         <div class="side-bar-space" />
         <li
           :class="tags.page == 'Options' ? 'active' : ''"
           @click="changeTab('设置', 'Options', false)">
           <font-awesome-icon :icon="['fas', 'gear']" />
+          <span>{{ $t('设置') }}</span>
         </li>
       </ul>
       <div
@@ -344,9 +348,14 @@
 
     import { defineComponent, defineAsyncComponent } from 'vue'
     import { Connector, login as loginInfo } from '@renderer/function/connect'
-    import { Logger, popList, PopInfo } from '@renderer/function/base'
+    import { Logger, popList, PopInfo, LogType } from '@renderer/function/base'
     import { runtimeData } from '@renderer/function/msg'
     import { BaseChatInfoElem } from '@renderer/function/elements/information'
+    import {
+        LocalNotificationsPlugin,
+        LocalNotificationSchema,
+        ActionType
+    } from '@capacitor/local-notifications'
     import * as App from './function/utils/appUtil'
 
     import Options from '@renderer/pages/Options.vue'
@@ -354,6 +363,8 @@
     import Messages from '@renderer/pages/Messages.vue'
     import Chat from '@renderer/pages/Chat.vue'
     import { Notify } from './function/notify'
+    import { sendMsgRaw } from './function/utils/msgUtil'
+    import { parseMsg } from './function/sender'
 
     export default defineComponent({
         name: 'App',
@@ -410,13 +421,20 @@
             // 页面加载完成后
             window.onload = async () => {
                 // 初始化全局参数
+                runtimeData.tags.isCapacitor = window.Capacitor != undefined
+                         && window.Capacitor.isNativePlatform()
                 runtimeData.tags.isElectron = window.electron != undefined
-                runtimeData.reader = window.electron?.ipcRenderer
-                if (runtimeData.reader) {
+                runtimeData.plantform.reader = window.electron?.ipcRenderer
+                if (runtimeData.plantform.reader) {
                     runtimeData.tags.platform =
-                        await runtimeData.reader.invoke('sys:getPlatform')
+                        await runtimeData.plantform.reader.invoke('sys:getPlatform')
                     runtimeData.tags.release =
-                        await runtimeData.reader.invoke('sys:getRelease')
+                        await runtimeData.plantform.reader.invoke('sys:getRelease')
+                }
+                if(runtimeData.tags.isCapacitor) {
+                    runtimeData.tags.platform = window.Capacitor.getPlatform()
+                    runtimeData.plantform.capacitor = window.Capacitor
+                    runtimeData.plantform.pulgins = window.Capacitor.Plugins
                 }
                 app.config.globalProperties.$viewer = this.viewerBody
                 // 初始化波浪动画
@@ -452,13 +470,96 @@
                     if (app) app.classList.add('withBar')
                 }
                 Option.runAS('opt_auto_gtk', Option.get('opt_auto_gtk'))
-
                 // 基础初始化完成
                 logger.debug('欢迎使用 Stapxs QQ Lite！')
                 logger.debug('当前启动模式为: ' + this.dev ? 'development' : 'production')
-                logger.debug('Electron 环境: ' + runtimeData.tags.isElectron)
+                logger.add(LogType.DEBUG, 'Electron 环境: '
+                    + runtimeData.tags.isElectron, window.electron)
+                logger.add(LogType.DEBUG, 'Capacitor 环境: '
+                    + runtimeData.tags.isCapacitor, window.Capacitor)
                 // 加载额外样式
                 App.loadAppendStyle()
+                const baseApp = document.getElementById('base-app')
+                if(baseApp) {
+                    baseApp.style.setProperty('--safe-area-bottom',
+                        (Option.get('fs_adaptation') > 0 ? Option.get('fs_adaptation') : 0) + 'px')
+                    baseApp.style.setProperty('--safe-area-top', '0')
+                    baseApp.style.setProperty('--safe-area-left', '0')
+                    baseApp.style.setProperty('--safe-area-right', '0')
+                    // Capacitor：移动端初始化安全区域
+                    if(runtimeData.tags.isCapacitor) {
+                        const safeArea = await runtimeData.plantform.
+                            pulgins.SafeArea?.getSafeArea()
+                        if(safeArea) {
+                            baseApp.style.setProperty('--safe-area-top', safeArea.top + 'px')
+                            baseApp.style.setProperty('--safe-area-bottom', safeArea.bottom + 'px')
+                            baseApp.style.setProperty('--safe-area-left', safeArea.left + 'px')
+                            baseApp.style.setProperty('--safe-area-right', safeArea.right + 'px')
+                        }
+                    }
+                }
+                // Capacitor：通知相关初始化
+                if(runtimeData.tags.isCapacitor) {
+                    const Notice = runtimeData.plantform.capacitor.Plugins
+                        .LocalNotifications as LocalNotificationsPlugin
+                    const permission = await Notice.checkPermissions()
+                    if(permission.display.indexOf('prompt') != -1) {
+                        await Notice.requestPermissions()
+                    } else if(permission.display.indexOf('denied') != -1) {
+                        logger.error(null, '通知权限已被拒绝')
+                    } else {
+                        logger.debug('通知权限已开启')
+                        // 注册通知类型
+                        Notice.registerActionTypes({
+                            types:[{
+                                id: 'msgQuickReply',
+                                actions: [{
+                                    id: 'REPLY_ACTION',
+                                    title: '快速回复',
+                                    requiresAuthentication: true,
+                                    input: true,
+                                    inputButtonTitle: '发送',
+                                    inputPlaceholder: '输入回复内容……'
+                                }]
+                            }] as ActionType[]
+                        })
+                        // 注册相关事件
+                        Notice.addListener('localNotificationActionPerformed', (info) => {
+                            const notification =
+                                info.notification as LocalNotificationSchema
+                            if(info.actionId == 'tap') {
+                                // PS：通知被点击后会自动被关闭，所以这里不需要处理
+                                App.jumpToChat(notification.extra.userId,
+                                    notification.extra.msgId)
+                            } else if(info.actionId == 'REPLY_ACTION') {
+                                // 快速回复
+                                sendMsgRaw(
+                                    notification.extra.userId,
+                                    notification.extra.chatType,
+                                    parseMsg(
+                                        info.inputValue ?? '',
+                                        [{ type: 'reply', id: String(notification.extra.msgId) }],
+                                        [],
+                                    ),
+                                    true
+                                )
+                                // 去消息列表内寻找，去除新消息标记
+                                for (let i = 0; i <
+                                    runtimeData.onMsgList.length; i++) {
+                                    if (
+                                        runtimeData.onMsgList[i].group_id
+                                            == notification.extra.userId ||
+                                        runtimeData.onMsgList[i].user_id
+                                            == notification.extra.userId
+                                    ) {
+                                        runtimeData.onMsgList[i].new_msg = false
+                                        break
+                                    }
+                                }
+                            }
+                        })
+                    }
+                }
                 // 加载密码保存和自动连接
                 loginInfo.address = runtimeData.sysConfig.address
                 if (
@@ -496,6 +597,21 @@
                 if (new Date().getMonth() == 3 && new Date().getDate() == 1) {
                     document.getElementById('connect_btn')?.classList.add('afd')
                 }
+                // 其他状态监听
+                if(runtimeData.tags.isElectron && runtimeData.reader) {
+                    this.$watch(() => runtimeData.onMsgList.length, () => {
+                        const list = [] as
+                            { id: number, name: string, image?: string }[]
+                        runtimeData.onMsgList.forEach((item) => {
+                            list.push({
+                                id: item.user_id ? item.user_id : item.group_id,
+                                name: item.group_name ? item.group_name : item.remark === item.nickname ? item.nickname : item.remark + '（' + item.nickname + '）',
+                                image: item.user_id ? 'https://q1.qlogo.cn/g?b=qq&s=0&nk=' + item.user_id : 'https://p.qlogo.cn/gh/' + item.group_id + '/' + item.group_id + '/0'
+                            })
+                        })
+                        runtimeData.reader?.send('sys:flushOnMessage', list)
+                    })
+                }
             }
             // 页面关闭前
             window.onbeforeunload = () => {
@@ -507,8 +623,8 @@
              * electron 窗口操作
              */
             controllWin(name: string) {
-                if (runtimeData.reader) {
-                    runtimeData.reader.send('win:' + name)
+                if (runtimeData.plantform.reader) {
+                    runtimeData.plantform.reader.send('win:' + name)
                 }
             },
 
@@ -644,8 +760,8 @@
                 Connector.send('get_system_msg', {}, 'getSystemMsg')
 
                 // 清理通知
-                if (runtimeData.reader) {
-                    runtimeData.reader.send('sys:closeAllNotice', data.id)
+                if (runtimeData.plantform.reader) {
+                    runtimeData.plantform.reader.send('sys:closeAllNotice', data.id)
                 }
             },
 

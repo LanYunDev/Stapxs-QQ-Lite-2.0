@@ -25,7 +25,7 @@
             @click="cleanList" />
         </div>
         <div class="small">
-          <span v-show="runtimeData.tags.openSideBar">{{
+          <span>{{
             $t('消息')
           }}</span>
           <div @click="openLeftBar">
@@ -141,7 +141,7 @@
     } from '@renderer/function/elements/information'
     import { getRaw as getOpt, run as runOpt } from '@renderer/function/option'
     import { loadHistoryMessage } from '@renderer/function/utils/appUtil'
-    import { Logger, LogType, PopInfo, PopType } from '@renderer/function/base'
+    import { PopInfo, PopType } from '@renderer/function/base'
     import { MenuStatue } from 'vue3-bcui/packages/dist/types'
     import { library } from '@fortawesome/fontawesome-svg-core'
     import { login as loginInfo } from '@renderer/function/connect'
@@ -175,44 +175,6 @@
         },
         mounted() {
             library.add(faCheckToSlot, faThumbTack, faTrashCan, faGripLines)
-            if (runtimeData.tags.isElectron && runtimeData.reader) {
-                this.$watch(
-                    () => runtimeData.onMsgList.length,
-                    () => {
-                        new Logger().add(
-                            LogType.UI,
-                            'flush touch bar: ' + runtimeData.onMsgList.length,
-                        )
-                        const list = [] as {
-                            id: number
-                            name: string
-                            image?: string
-                        }[]
-                        runtimeData.onMsgList.forEach((item) => {
-                            list.push({
-                                id: item.user_id ? item.user_id : item.group_id,
-                                name: item.group_name
-                                    ? item.group_name
-                                    : item.remark === item.nickname
-                                      ? item.nickname
-                                      : item.remark +
-                                        '（' +
-                                        item.nickname +
-                                        '）',
-                                image: item.user_id
-                                    ? 'https://q1.qlogo.cn/g?b=qq&s=0&nk=' +
-                                      item.user_id
-                                    : 'https://p.qlogo.cn/gh/' +
-                                      item.group_id +
-                                      '/' +
-                                      item.group_id +
-                                      '/0',
-                            })
-                        })
-                        runtimeData.reader?.send('sys:flushTouchBar', list)
-                    },
-                )
-            }
         },
         methods: {
             /**

@@ -1,6 +1,7 @@
 import Store from 'electron-store'
 import path from 'path'
 import os from 'os'
+import log4js from 'log4js'
 
 import {
     ipcMain,
@@ -14,9 +15,11 @@ import {
 import { runCommand } from './util.ts'
 import { win, touchBarInstance } from '../index.ts'
 import { Connector } from './connector.ts'
+import { logLevel } from '../index.ts'
 
 let connector = undefined as Connector | undefined
 const store = new Store()
+const logger = log4js.getLogger('ipc')
 let template = [] as any[]
 
 // 消息缓存，key 为 tag
@@ -186,6 +189,13 @@ export function regIpcListener() {
     })
     // 发送通知
     ipcMain.on('sys:sendNotice', async (_, data) => {
+        logger.level = logLevel
+        logger.info('创建通知：' + data.tag + ' - ' + data.body)
+        // MacOS: 刷新 TouchBar
+        if(touchBarInstance && data.base_type === 'msg') {
+            touchBarInstance.newMessage(data)
+        }
+
         const userId = data.tag.split('/')[0]
         const msgId = data.tag.split('/')[1]
 
@@ -260,21 +270,38 @@ export function regIpcListener() {
     })
     // 关闭通知
     ipcMain.on('sys:closeNotice', (_, tag) => {
-        if (noticeList[tag]) {
+        if(noticeList[tag]) {
+            logger.level = logLevel
+            logger.info('关闭通知：' + tag)
             noticeList[tag].close()
+            delete noticeList[tag]
+            // macOS: 刷新 TouchBar
+            if(touchBarInstance) {
+                touchBarInstance.removeMessage(tag)
+            }
         }
     })
     // 清空通知
     ipcMain.on('sys:clearNotice', () => {
         Object.keys(noticeList).forEach((key) => {
+            logger.level = logLevel
+            logger.info('清空通知')
             noticeList[key].close()
+            delete noticeList[key]
         })
     })
     // 关闭指定 ID 的所有通知
     ipcMain.on('sys:closeAllNotice', (_, id) => {
         Object.keys(noticeList).forEach((key) => {
-            if (key.startsWith(id)) {
+            if(key.startsWith(id)) {
+                logger.level = logLevel
+                logger.info('关闭所有通知：' + id)
                 noticeList[key].close()
+                delete noticeList[key]
+                // macOS: 刷新 TouchBar
+                if(touchBarInstance) {
+                    touchBarInstance.removeMessage(key)
+                }
             }
         })
     })
@@ -484,6 +511,7 @@ export function regIpcListener() {
     })
     function sendMenuClick(name: string, value = undefined as any) {
         if (win) {
+            win.focus()
             if (value) {
                 win.webContents.send(name, value)
             } else {
@@ -491,16 +519,15 @@ export function regIpcListener() {
             }
         }
     }
-    // MacOS：刷新 touchBar 消息列表
-    ipcMain.on('sys:flushTouchBar', (_, list) => {
-        if (touchBarInstance) {
-            touchBarInstance.flush(list)
+    // MacOS：touchBar 相关功能
+    ipcMain.on('sys:flushOnMessage', (_, list) => {
+        if(touchBarInstance) {
+            touchBarInstance.flushOnMessage(list)
         }
     })
-    // MacOS：新消息，刷新 touchBar
-    ipcMain.on('sys:newMessage', (_, data) => {
-        if (touchBarInstance) {
-            touchBarInstance.newMessage(data)
+    ipcMain.on('sys:flushFriendSearch', (_, list) => {
+        if(touchBarInstance) {
+            touchBarInstance.flushFriendSearch(list)
         }
     })
 }

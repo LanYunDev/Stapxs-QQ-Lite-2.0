@@ -107,15 +107,17 @@ function replaceJPValue(jpStr: string) {
  * @returns 表情图片
  */
 export function getFace(id: number) {
-    const pathList = import.meta.glob('@renderer/assets/img/qq-face/public/*/s*.*')
+    const pathList = import.meta.glob('@renderer/assets/img/qq-face/public/*/s*.*',
+        { eager: true }
+    )
     for(const path in pathList) {
         if (path.includes(`/s${id}.gif`)) {
-            return path
+            return (pathList[path] as any).default
         }
     }
     for(const path in pathList) {
         if (path.includes(`/s${id}.png`)) {
-            return path
+            return (pathList[path] as any).default
         }
     }
     return ''
@@ -534,7 +536,7 @@ export function orderOnMsgList(list: (UserFriendElem & UserGroupElem)[]) {
     ) => {
         if (a.time == b.time || a.time == undefined || b.time == undefined) {
             if (a.py_start == undefined || b.py_start == undefined) {
-                return 0
+                return 1
             }
             return b.py_start.charCodeAt(0) - a.py_start.charCodeAt(0)
         }

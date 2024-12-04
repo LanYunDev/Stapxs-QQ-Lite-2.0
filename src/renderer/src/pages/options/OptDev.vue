@@ -317,8 +317,8 @@
                 console.log(runtimeData)
                 console.log('=========================')
                 /* eslint-enable no-console */
-                if (runtimeData.reader) {
-                    runtimeData.reader.send('win:openDevTools')
+                if (runtimeData.plantform.reader) {
+                    runtimeData.plantform.reader.send('win:openDevTools')
                 }
             },
             async printVersionInfo() {
@@ -329,9 +329,9 @@
 
                 // electron：索要 electron 信息
                 let addInfo = undefined
-                if (runtimeData.reader) {
+                if (runtimeData.plantform.reader) {
                     addInfo =
-                        await runtimeData.reader.invoke('opt:getSystemInfo')
+                        await runtimeData.plantform.reader.invoke('opt:getSystemInfo')
                 }
 
                 const browser = detect() as BrowserInfo
@@ -353,7 +353,7 @@
                 // 获取安装信息，这儿主要判断几种已提交的包管理安装方式
                 if (
                     runtimeData.tags.isElectron &&
-                    runtimeData.reader &&
+                    runtimeData.plantform.reader &&
                     runtimeData.tags.release
                 ) {
                     const process = window.electron?.process
@@ -366,7 +366,7 @@
                                     .indexOf('arch') > 0
                             ) {
                                 let pacmanInfo =
-                                    await runtimeData.reader.invoke(
+                                    await runtimeData.plantform.reader.invoke(
                                         'sys:runCommand',
                                         'pacman -Q stapxs-qq-lite-bin',
                                     )
@@ -374,8 +374,8 @@
                                     info += '    Install Type     -> aur\n'
                                 } else {
                                     // 也有可能是 stapxs-qq-lite，这是我自己打的原生包
-                                    pacmanInfo =
-                                        await runtimeData.reader.invoke(
+                                    pacmanInfo = await runtimeData.
+                                        plantform.reader.invoke(
                                             'sys:runCommand',
                                             'pacman -Q stapxs-qq-lite',
                                         )
@@ -543,8 +543,8 @@
                                                 ';path=/',
                                         )
                                 })
-                                if (runtimeData.reader) {
-                                    runtimeData.reader.sendSync('opt:clearAll')
+                                if (runtimeData.plantform.reader) {
+                                    runtimeData.plantform.reader.sendSync('opt:clearAll')
                                 }
                                 location.reload()
                             },
@@ -561,8 +561,8 @@
                 runtimeData.popBoxList.push(popInfo)
             },
             restartapp() {
-                if (runtimeData.reader) {
-                    runtimeData.reader.send('win:relaunch')
+                if (runtimeData.plantform.reader) {
+                    runtimeData.plantform.reader.send('win:relaunch')
                 }
             },
             getBotTypeName(index: BotMsgType) {

@@ -41,7 +41,7 @@ export default defineConfig({
             output: {
                 chunkFileNames: 'assets/js/[name]-[hash].js',
                 entryFileNames: 'assets/js/[name]-[hash].js',
-                assetFileNames: '[ext]/[name]-[hash].[ext]',
+                assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
                 manualChunks(id) {
                     if (id.includes('node_modules')) {
                         // 让每个插件都打包成独立的文件
