@@ -1,14 +1,13 @@
-# 为了减小包大小，此 dockerfile 中不负责构建项目，只负责运行项目
-# 确保在构建项目后再运行此 dockerfile
+# ssqq quick start nginx dockerfile
+# 请确保项目已经构建完成存在 dist 目录
 
-FROM node:hydrogen-alpine
+FROM nginx:alpine
 
-COPY ssqq.npx-web-quick-start/bin /app/bin
-COPY dist /app/dist
-COPY ssqq.npx-web-quick-start/package.json /app/package.json
+RUN rm -rf /usr/share/nginx/html/*
+COPY dist /usr/share/nginx/html
 
-WORKDIR /app
-RUN yarn install
+# 修改nginx配置文件，将端口改为8080，以免影响已有用户的配置
+RUN sed -i 's/listen       80;/listen       8080;/' /etc/nginx/conf.d/default.conf
 
 EXPOSE 8080
-CMD node bin/index.js -- hostname=0.0.0.0 port=8080 skip-update
+CMD ["nginx", "-g", "daemon off;"]
